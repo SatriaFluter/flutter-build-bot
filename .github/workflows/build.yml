@@ -1,0 +1,29 @@
+name: Build Flutter APK
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag release'
+        required: true
+      build_type:
+        description: 'debug or release'
+        required: true
+      app_name:
+        description: 'Nama APK output (tanpa ekstensi)'
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+      - run: flutter pub get
+      - run: flutter build apk --${{ github.event.inputs.build_type }}
+      - name: Rename APK
+        run: |
+          mkdir -p output
+          cp build/app/outputs/flutter-apk/app-${{ github.event.inputs.build_type }}.apk output/${{ github.event.inputs.app_name }}.apk
+      - uses: actions/upload-artifact@v3
+        with:
+          name: app
+          path: output/${{ github.event.inputs.app_name }}.apk
