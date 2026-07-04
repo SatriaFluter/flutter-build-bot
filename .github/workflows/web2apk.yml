@@ -1,0 +1,27 @@
+name: Web to APK
+on:
+  workflow_dispatch:
+    inputs:
+      web_url:
+        description: 'URL website'
+        required: true
+      app_name:
+        description: 'Nama aplikasi'
+        required: true
+      icon_url:
+        description: 'URL icon'
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create dummy APK (ganti dengan script asli)
+        run: |
+          echo "Web to APK not fully implemented" > README.txt
+          echo "URL: ${{ github.event.inputs.web_url }}" >> README.txt
+          echo "Nama: ${{ github.event.inputs.app_name }}" >> README.txt
+          echo "Icon: ${{ github.event.inputs.icon_url }}" >> README.txt
+      - uses: actions/upload-artifact@v3
+        with:
+          name: app
+          path: README.txt
