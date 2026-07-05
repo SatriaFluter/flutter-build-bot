@@ -1,27 +1,79 @@
-name: Web to APK
+name: Web to APK Converter
+
 on:
   workflow_dispatch:
     inputs:
-      web_url:
+      webUrl:
         description: 'URL website'
         required: true
-      app_name:
-        description: 'Nama aplikasi'
+        type: string
+      appName:
+        description: 'Nama Aplikasi'
         required: true
-      icon_url:
-        description: 'URL icon'
+        type: string
+      iconUrl:
+        description: 'URL Icon (PNG)'
         required: true
+        type: string
+
 jobs:
-  build:
+  build-web2apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     steps:
-      - name: Create dummy APK (ganti dengan script asli)
-        run: |
-          echo "Web to APK not fully implemented" > README.txt
-          echo "URL: ${{ github.event.inputs.web_url }}" >> README.txt
-          echo "Nama: ${{ github.event.inputs.app_name }}" >> README.txt
-          echo "Icon: ${{ github.event.inputs.icon_url }}" >> README.txt
-      - uses: actions/upload-artifact@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          name: app
-          path: README.txt
+          channel: stable
+
+      - name: Create Flutter web project
+        run: |
+          flutter create --platforms=android webapp
+          cd webapp
+          flutter pub add webview_flutter
+
+      - name: Configure WebView
+        run: |
+          cd webapp/lib
+          cat > main.dart << 'EOF'
+          import 'package:flutter/material.dart';
+          import 'package:webview_flutter/webview_flutter.dart';
+
+          void main() => runApp(MyApp());
+
+          class MyApp extends StatelessWidget {
+            @override
+            Widget build(BuildContext context) {
+              return MaterialApp(
+                home: Scaffold(
+                  appBar: AppBar(title: Text('${{ github.event.inputs.appName }}')),
+                  body: WebView(
+                    initialUrl: '${{ github.event.inputs.webUrl }}',
+                    javascriptMode: JavascriptMode.unrestricted,
+                  ),
+                ),
+              );
+            }
+          }
+          EOF
+
+      - name: Download and set icon
+        run: |
+          curl -L -o webapp/android/app/src/main/res/mipmap-hdpi/ic_launcher.png \
+            "${{ github.event.inputs.iconUrl }}"
+          # Ganti semua icon sizes (simplifikasi)
+
+      - name: Build APK
+        working-directory: ./webapp
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: webapp-${{ github.event.inputs.appName }}
+          path: ./webapp/build/app/outputs/flutter-apk/*.apk
+          retention-days: 7
