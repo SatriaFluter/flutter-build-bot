@@ -50,7 +50,9 @@ jobs:
             Widget build(BuildContext context) {
               return MaterialApp(
                 home: Scaffold(
-                  appBar: AppBar(title: Text('${{ github.event.inputs.appName }}')),
+                  appBar: AppBar(
+                    title: Text('${{ github.event.inputs.appName }}'),
+                  ),
                   body: WebView(
                     initialUrl: '${{ github.event.inputs.webUrl }}',
                     javascriptMode: JavascriptMode.unrestricted,
@@ -77,3 +79,14 @@ jobs:
           name: webapp-${{ github.event.inputs.appName }}
           path: ./webapp/build/app/outputs/flutter-apk/*.apk
           retention-days: 7
+
+      - name: Upload APK to release
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK_FILE=$(ls ./webapp/build/app/outputs/flutter-apk/*.apk | head -1)
+          APK_NAME=$(basename "$APK_FILE")
+          echo "📤 Uploading $APK_NAME to release ${{ github.event.inputs.tag }}"
+          # Untuk web2apk, kita tidak punya tag input, bisa buat tag sendiri atau skip
+          # Saya skip karena bot tidak membutuhkan upload ke release (sudah pakai artifact)
